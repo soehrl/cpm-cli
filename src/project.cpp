@@ -21,9 +21,6 @@ project(
 
 include(cmake/CPM.cmake)
 
-# Dependencies start
-# Dependencies end
-
 )", project_name);
 }
 

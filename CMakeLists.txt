@@ -8,12 +8,13 @@ project(
   LANGUAGES CXX
 )
 
+include(CTest)
 include(cmake/CPM.cmake)
 
 CPMAddPackage("gh:fmtlib/fmt#9.1.0")
 CPMAddPackage("gh:gabime/spdlog@1.11.0")
 CPMAddPackage("gh:CLIUtils/CLI11@2.3.1")
-CPMAddPackage("gh:arun11299/cpp-subprocess#cbc9e82")
+CPMAddPackage("gh:soehrl/subprocess#901ba4a")
 
 add_executable(
   cpm
@@ -38,10 +39,28 @@ target_link_libraries(
     fmt::fmt
     spdlog::spdlog
     CLI11::CLI11
-    subprocess
+    subprocess::subprocess
 )
 
 set_property(
   TARGET cpm 
   PROPERTY CXX_STANDARD 20
 )
+
+if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  include(cmake/add_cpm_test.cmake)
+  add_custom_command(
+    TARGET cpm
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/test_environment_template
+  )
+  add_custom_command(
+    TARGET cpm
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E rm -rf *
+    COMMAND cpm create existing_project
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/test_environment_template
+  )
+  configure_file(cmake/CTestCustom.cmake ${CMAKE_BINARY_DIR}/CTestCustom.cmake)
+  add_subdirectory(test)
+endif ()
