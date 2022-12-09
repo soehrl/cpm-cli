@@ -5,6 +5,7 @@
 #include "CLI/Error.hpp"
 #include "project.hpp"
 #include "cpm.cmake.hpp"
+#include "registry.hpp"
 #include "spdlog/spdlog.h"
 #include "utils.hpp"
 
@@ -122,9 +123,18 @@ void Project::AddPackage(std::string_view package_definition) {
     throw CLI::RuntimeError(-1);
   }
 
+  std::string add_package_string(package_definition);
+  if (const auto repository = Repository::Parse(package_definition); repository) {
+    add_package_string = repository->GetCPMDefinitionForLatestVersion();
+  } else if (package_definition.find(':') == std::string::npos) {
+    if (const auto package = FindPackage(package_definition); package) {
+      add_package_string = package->repository.GetCPMDefinitionForLatestVersion();
+    }
+  }
+
   project_file_content->insert(
     GetPackageInsertPosition(*project_file_content),
-    fmt::format("\nCPMAddPackage(\"{}\")", package_definition)
+    fmt::format("\nCPMAddPackage(\"{}\")", add_package_string)
   );
   WriteFile(project_file_path, *project_file_content);
 }

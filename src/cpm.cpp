@@ -1,10 +1,11 @@
 #include "commands.hpp"
 #include "cmake.hpp"
+#include "context.hpp"
 #include "spdlog/spdlog.h"
 #include "CLI/CLI.hpp"
 
 int main(int argc, char* argv[]) {
-  // FindCMake();
+  InitContext();
 
   CLI::App app;
 

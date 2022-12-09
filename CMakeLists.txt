@@ -15,6 +15,9 @@ CPMAddPackage("gh:fmtlib/fmt#9.1.0")
 CPMAddPackage("gh:gabime/spdlog@1.11.0")
 CPMAddPackage("gh:CLIUtils/CLI11@2.3.1")
 CPMAddPackage("gh:soehrl/subprocess#901ba4a")
+CPMAddPackage("gh:nlohmann/json@3.10.5")
+CPMAddPackage("gh:libcpr/cpr#1.9.3")
+CPMAddPackage("gh:Neargye/semver@0.3.0")
 
 add_executable(
   cpm
@@ -23,6 +26,8 @@ add_executable(
   src/cmake.cpp
   src/cpm.cmake.cpp
   src/utils.cpp
+  src/context.cpp
+  src/registry.cpp
 
   src/project.cpp
   src/target.cpp
@@ -41,6 +46,9 @@ target_link_libraries(
     spdlog::spdlog
     CLI11::CLI11
     subprocess::subprocess
+    nlohmann_json::nlohmann_json
+    semver::semver
+    cpr::cpr
 )
 
 set_property(
