@@ -4,5 +4,6 @@
 
 void AddCreateCommand(CLI::App& app);
 void AddAddCommand(CLI::App& app);
+void AddAddPackageCommand(CLI::App& app);
 void AddConfigureCommand(CLI::App& app);
 void AddBuildCommand(CLI::App& app);

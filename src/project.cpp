@@ -1,9 +1,12 @@
+#include <cstdlib>
 #include <optional>
 #include <regex>
 
+#include "CLI/Error.hpp"
 #include "project.hpp"
 #include "cpm.cmake.hpp"
 #include "spdlog/spdlog.h"
+#include "utils.hpp"
 
 namespace fs = std::filesystem;
 
@@ -36,6 +39,35 @@ std::optional<std::string> ParseProjectName(std::string project_file_conent) {
   }
 }
 
+void ParsePackages(std::string_view project_file_content) {
+  std::smatch match;
+  std::string remaining_content(project_file_content);
+  std::regex package_definition(R"(CPMAddPackage\s*\(\s*\"(\S+)\"\s*\))");
+  while (std::regex_search(remaining_content, match, package_definition)) {
+    spdlog::info("Found package {}", match[1].str());
+    remaining_content = match.suffix();
+  }
+}
+
+size_t GetPackageInsertPosition(std::string_view project_file_content) {
+  std::smatch match;
+  std::string remaining_content(project_file_content);
+
+  std::regex include_cpm_definition(R"(include\s*\(\s*.*CPM\.cmake\s*\))");
+  if (std::regex_search(remaining_content, match, include_cpm_definition)) {
+    remaining_content = match.suffix();
+  } else {
+    spdlog::error("Project does not seem to use CPM.");
+    throw CLI::RuntimeError(-1);
+  }
+
+  std::regex package_definition(R"(CPMAddPackage\s*\(\s*\"(\S+)\"\s*\))");
+  while (std::regex_search(remaining_content, match, package_definition)) {
+    remaining_content = match.suffix();
+  }
+
+  return project_file_content.size() - remaining_content.size();
+}
 
 std::shared_ptr<Project> Project::Open(const Path& path) {
   const auto cmakelists_file_path = path / "CMakeLists.txt";
@@ -49,6 +81,7 @@ std::shared_ptr<Project> Project::Open(const Path& path) {
   const auto project_name = ParseProjectName(*cmakelists_file_content);
   if (!project_name.has_value()) {
     spdlog::error("Cannot determine project name");
+
     return nullptr;
   }
   
@@ -81,6 +114,17 @@ std::shared_ptr<Target> Project::AddTarget(std::string_view name, TargetType typ
   return Target::Create(this->shared_from_this(), std::string(name), type);
 }
 
-void Project::AddDependency(std::string_view dependency) {
-  spdlog::info("Adding a dependency");
+void Project::AddPackage(std::string_view package_definition) {
+  const auto project_file_path = path / "CMakeLists.txt";
+  auto project_file_content = ReadFile(project_file_path);
+  if (!project_file_content ) {
+    spdlog::error("Failed to read {}.", project_file_path.string());
+    throw CLI::RuntimeError(-1);
+  }
+
+  project_file_content->insert(
+    GetPackageInsertPosition(*project_file_content),
+    fmt::format("\nCPMAddPackage(\"{}\")", package_definition)
+  );
+  WriteFile(project_file_path, *project_file_content);
 }

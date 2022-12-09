@@ -44,4 +44,6 @@ void AddAddCommand(CLI::App& app) {
       }
     );
   }
+
+  AddAddPackageCommand(*add_command);
 }

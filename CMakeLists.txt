@@ -29,6 +29,7 @@ add_executable(
 
   src/commands/create.cpp
   src/commands/add.cpp
+  src/commands/add_package.cpp
   src/commands/configure.cpp
   src/commands/build.cpp
 )
