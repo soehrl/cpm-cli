@@ -72,23 +72,34 @@ size_t GetPackageInsertPosition(std::string_view project_file_content) {
 
 std::shared_ptr<Project> Project::Open(const Path& path) {
   const auto cmakelists_file_path = path / "CMakeLists.txt";
-  const auto cmakelists_file_content = ReadFile(cmakelists_file_path);
 
-  if (!cmakelists_file_content.has_value()) {
+  std::shared_ptr<Project> project;
+  if (!fs::exists(cmakelists_file_path)) {
+    if (!path.has_parent_path()) {
+      project = Open(path.parent_path());
+    }
+  } else {
+    const auto cmakelists_file_content = ReadFile(cmakelists_file_path);
+
+    if (!cmakelists_file_content.has_value()) {
+      spdlog::error("Failed to open {}", cmakelists_file_path.string());
+    } else {
+      const auto project_name = ParseProjectName(*cmakelists_file_content);
+      if (!project_name.has_value()) {
+        if (path.has_parent_path()) {
+          project = Open(path.parent_path());
+        }
+      } else {
+        project = std::make_shared<Project>();
+        project->name = *project_name;
+        project->path = path;
+      }
+    }
+  }
+
+  if (!project) {
     spdlog::error("The current folder does not seem to be a cmake project");
-    return nullptr;
   }
-
-  const auto project_name = ParseProjectName(*cmakelists_file_content);
-  if (!project_name.has_value()) {
-    spdlog::error("Cannot determine project name");
-
-    return nullptr;
-  }
-  
-  auto project = std::make_shared<Project>();
-  project->name = *project_name;
-  project->path = path;
 
   return project;
 }
