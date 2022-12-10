@@ -39,20 +39,21 @@ struct Repository {
   static std::optional<Repository> Parse(std::string_view uri);
 
   // Returns the list of available versions sorted from oldest to newest.
-  std::vector<TaggedVersion> QueryVersions() const;
+  std::vector<TaggedVersion> QueryVersions(std::string_view version_prefix = "") const;
 
   // Returns the latest version of the package.
-  std::optional<TaggedVersion> QueryLatestVersion() const;
+  std::optional<TaggedVersion> QueryLatestVersion(std::string_view version_prefix = "") const;
 
   // Returns the definition for a CPMAddPackge call.
   std::string GetCPMDefinition(const std::optional<TaggedVersion>& version = std::nullopt) const;
 
   // Returns the CPMAddPackge definition for the latest version
-  std::string GetCPMDefinitionForLatestVersion() const;
+  std::string GetCPMDefinitionForLatestVersion(std::string_view version_prefix = "") const;
 };
 
 struct RegisteredPackage {
   Repository repository;
+  std::string version_prefix;
 
   static std::optional<RegisteredPackage> Parse(const nlohmann::json& json);
 

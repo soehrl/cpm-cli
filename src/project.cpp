@@ -139,7 +139,7 @@ void Project::AddPackage(std::string_view package_definition) {
     add_package_string = repository->GetCPMDefinitionForLatestVersion();
   } else if (package_definition.find(':') == std::string::npos) {
     if (const auto package = FindPackage(package_definition); package) {
-      add_package_string = package->repository.GetCPMDefinitionForLatestVersion();
+      add_package_string = package->repository.GetCPMDefinitionForLatestVersion(package->version_prefix);
     }
   }
 
