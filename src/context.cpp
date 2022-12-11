@@ -59,6 +59,7 @@ bool Context::SetupRegistries() const {
     const auto registry_path = g_context.paths.registries / name.str();
     const auto repository_uri = registry_config.as_table()->at("repository").value<std::string>();
 
+    spdlog::info("Update registry {}", name.str());
     if (!fs::exists(registry_path)) {
       const auto clone = subprocess::Popen({ "git", "clone", repository_uri->c_str(), registry_path.c_str() }).wait();
     } else {
