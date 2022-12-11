@@ -28,7 +28,8 @@ add_executable(
   src/utils.cpp
   src/context.cpp
   src/registry.cpp
-
+  src/repository.cpp
+  src/version.cpp
   src/project.cpp
   src/target.cpp
 
