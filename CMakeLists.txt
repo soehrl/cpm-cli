@@ -17,7 +17,7 @@ CPMAddPackage("gh:CLIUtils/CLI11@2.3.1")
 CPMAddPackage("gh:soehrl/subprocess#901ba4a")
 CPMAddPackage("gh:nlohmann/json@3.10.5")
 CPMAddPackage("gh:libcpr/cpr#1.9.3")
-CPMAddPackage("gh:Neargye/semver@0.3.0")
+CPMAddPackage("gh:marzer/tomlplusplus@3.2.0")
 
 add_executable(
   cpm
@@ -47,13 +47,17 @@ target_link_libraries(
     CLI11::CLI11
     subprocess::subprocess
     nlohmann_json::nlohmann_json
-    semver::semver
     cpr::cpr
+    tomlplusplus::tomlplusplus
 )
 
 set_property(
   TARGET cpm 
   PROPERTY CXX_STANDARD 20
+)
+
+install(
+  TARGETS cpm
 )
 
 if (CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)

@@ -166,7 +166,10 @@ std::optional<RegisteredPackage> RegisteredPackage::Parse(const nlohmann::json& 
 std::optional<RegisteredPackage> FindPackage(std::string_view package_name) {
   const std::string package_filename = fmt::format("{}.json", package_name);
 
-  for (const auto& registry_path : g_context.paths.registries) {
+  g_context.SetupRegistries();
+
+  for (const auto& [registry_name, _] : *g_context.config["registries"].as_table()) {
+    const auto registry_path = g_context.paths.registries / registry_name.str();
     const auto registry_package_filename = registry_path / package_filename;
     if (fs::exists(registry_package_filename)) {
       std::ifstream package_file(registry_package_filename);

@@ -5,7 +5,9 @@
 #include "CLI/CLI.hpp"
 
 int main(int argc, char* argv[]) {
-  InitContext();
+  if (!Context::Init()) {
+    return -1;
+  }
 
   CLI::App app;
 
@@ -14,8 +16,6 @@ int main(int argc, char* argv[]) {
   AddConfigureCommand(app);
   AddBuildCommand(app);
   app.require_subcommand();
-
-  // app.validate_positionals();
 
   CLI11_PARSE(app, argc, argv);
 }

@@ -134,18 +134,22 @@ void Project::AddPackage(std::string_view package_definition) {
     throw CLI::RuntimeError(-1);
   }
 
-  std::string add_package_string(package_definition);
+  std::string add_package_string;
   if (const auto repository = Repository::Parse(package_definition); repository) {
     add_package_string = repository->GetCPMDefinitionForLatestVersion();
   } else if (package_definition.find(':') == std::string::npos) {
     if (const auto package = FindPackage(package_definition); package) {
       add_package_string = package->repository.GetCPMDefinitionForLatestVersion(package->version_prefix);
     }
+  } else {
+    add_package_string = package_definition;
   }
 
-  project_file_content->insert(
-    GetPackageInsertPosition(*project_file_content),
-    fmt::format("\nCPMAddPackage(\"{}\")", add_package_string)
-  );
-  WriteFile(project_file_path, *project_file_content);
+  if (add_package_string.length() > 0) {
+    project_file_content->insert(
+      GetPackageInsertPosition(*project_file_content),
+      fmt::format("\nCPMAddPackage(\"{}\")", add_package_string)
+    );
+    WriteFile(project_file_path, *project_file_content);
+  }
 }
