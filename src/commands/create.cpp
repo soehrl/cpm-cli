@@ -8,16 +8,20 @@ void AddCreateCommand(CLI::App& app) {
 
   static std::string project_name;
 
+  static std::optional<std::string> template_uri;
+  create_command
+    ->add_option("-t,--template", template_uri)
+    ->description("Git repository containing the template for the project");
+
   create_command
     ->add_option("project_name", project_name)
     ->description("The name of the project")
     ->required();
 
   create_command->callback([&]() {
-    const auto project = Project::Create(fs::current_path(), project_name);
+    const auto project = Project::Create(fs::current_path() / project_name, template_uri ? *template_uri : "");
     if (!project) {
       throw CLI::RuntimeError(-1);
     }
-    const auto default_target = project->AddTarget(project_name, TargetType::EXECUTABLE);
   });
 }

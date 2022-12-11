@@ -1,32 +1,16 @@
 #include <cstdlib>
+#include <filesystem>
 #include <optional>
 #include <regex>
 
 #include "CLI/Error.hpp"
 #include "project.hpp"
-#include "cpm.cmake.hpp"
 #include "registry.hpp"
 #include "spdlog/spdlog.h"
+#include "subprocess.hpp"
 #include "utils.hpp"
 
 namespace fs = std::filesystem;
-
-std::string GenerateCMakeListsFile(std::string_view project_name) {
-  return fmt::format(
-R"(cmake_minimum_required(
-  VERSION 3.14
-)
-
-project(
-  {}
-  VERSION 0.1.0
-  LANGUAGES CXX
-)
-
-include(cmake/CPM.cmake)
-
-)", project_name);
-}
 
 std::optional<std::string> ParseProjectName(std::string project_file_conent) {
   std::regex project_definition("project\\s*\\(\\s*(\\S+)");
@@ -104,26 +88,59 @@ std::shared_ptr<Project> Project::Open(const Path& path) {
   return project;
 }
 
-std::shared_ptr<Project> Project::Create(const Path& parent_path, std::string_view project_name) {
+std::shared_ptr<Project> Project::Create(const Path& project_path, std::string_view template_definition) {
   auto project = std::make_shared<Project>();
-  project->path = parent_path / project_name;
+  project->path = project_path;
 
-  if (!fs::create_directory(project->path)) {
-    spdlog::error("Cannot create folder {}", project_name);
+  Repository repository;
+
+  if (template_definition.length() > 0) {
+    const auto parsed_repository = Repository::Parse(template_definition);
+    if (!parsed_repository) {
+      spdlog::error("Failed to parse repository url: {}", template_definition);
+      return nullptr;
+    } else {
+      repository = std::move(*parsed_repository);
+    }
+  } else {
+    repository.type = RepositoryType::GITHUB;
+    repository.url = "https://github.com/TheLartians/ModernCppStarter.git";
+    repository.name = "ModernCppStarter";
+    repository.owner = "TheLartians";
+  }
+
+  const int clone_result = subprocess::Popen({ "git", "clone", "--recursive", "--no-tags", "--single-branch", repository.url.c_str(), project_path.c_str() }).wait();
+  if (clone_result != 0) {
+    spdlog::error("Failed to clone template");
     return nullptr;
   }
-  WriteFile(project->path / "CMakeLists.txt", GenerateCMakeListsFile(project_name));
 
-  if (!fs::create_directory(project->path / "cmake")) {
-    spdlog::error("Cannot create folder {}", "cmake");
+  if (const int result = subprocess::Popen({ "git", "remote", "remove", "origin"}, subprocess::cwd{project_path.c_str()}).wait(); result != 0) {
+    spdlog::error("Failed to remove old remote origin");
+    return nullptr;
   }
-  WriteFile(project->path / "cmake" / "CPM.cmake", cpm_cmake);
+
+  const auto branch_name_buffer = subprocess::check_output({ "git", "branch", "--show-current"}, subprocess::cwd{project_path.c_str()});
+  const std::string branch_name(branch_name_buffer.buf.data(), branch_name_buffer.length - 1);
+  const std::string orphan_branch_name = fmt::format("{}-copy", branch_name);
+
+
+  if (const int result = subprocess::Popen({ "git", "checkout", "--orphan", orphan_branch_name.c_str()}, subprocess::cwd{project_path.c_str()}).wait(); result != 0) {
+    spdlog::error("Failed to create orphan branch");
+    return nullptr;
+  }
+
+  if (const int result = subprocess::Popen({ "git", "branch", "-D", branch_name.c_str()}, subprocess::cwd{project_path.c_str()}).wait(); result != 0) {
+    spdlog::error("Failed to delete old branch {}", branch_name);
+    return nullptr;
+  }
+
+  if (const int result = subprocess::Popen({ "git", "branch", "-m", "main"}, subprocess::cwd{project_path.c_str()}).wait(); result != 0) {
+    spdlog::error("Failed to move branch");
+    return nullptr;
+  }
 
   return project;
-}
-
-std::shared_ptr<Target> Project::AddTarget(std::string_view name, TargetType type) {
-  return Target::Create(this->shared_from_this(), std::string(name), type);
 }
 
 void Project::AddPackage(std::string_view package_definition) {

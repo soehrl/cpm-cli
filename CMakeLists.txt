@@ -24,18 +24,15 @@ add_executable(
 
   src/cpm.cpp
   src/cmake.cpp
-  src/cpm.cmake.cpp
   src/utils.cpp
   src/context.cpp
   src/registry.cpp
   src/repository.cpp
   src/version.cpp
   src/project.cpp
-  src/target.cpp
 
   src/commands/create.cpp
   src/commands/add.cpp
-  src/commands/add_package.cpp
   src/commands/configure.cpp
   src/commands/build.cpp
 )
